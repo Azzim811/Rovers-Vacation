@@ -38,7 +38,6 @@ app.post('/send-email', (req, res) => {
                 <div style="background-color: #0D78E7; padding: 30px; text-align: center;">
                     <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px;">Rovers Vacations</h1>
                     <p style="color: #e0f2fe; margin: 5px 0 0; font-size: 14px;">New Trip Enquiry Received</p>
-                    <img src="assets/images/logo22.png" alt="Rovers Vacation Logo">
                 </div>
                 <div style="padding: 40px 30px;">
                     <p style="font-size: 16px; color: #334155; margin-bottom: 25px;">Hello Admin,</p>
@@ -85,6 +84,10 @@ app.post('/send-email', (req, res) => {
     });
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
+}
+
+module.exports = app;

@@ -48,8 +48,19 @@ A modern, responsive travel agency website featuring a clean design, tour packag
    ```
    The website will be available at `http://localhost:3000`.
 
+## 🌐 Vercel Deployment
+
+This project is configured to work seamlessly with Vercel's serverless functions.
+
+1. **Deploy to Vercel**: You can use the Vercel CLI or connect your GitHub repository to Vercel.
+2. **Environment Variables**: In your Vercel project settings, add the following Environment Variables:
+   - `EMAIL_USER`: Your Gmail address.
+   - `EMAIL_PASS`: Your Gmail App Password.
+3. **Automatic Routing**: The `vercel.json` file handles all routing, ensuring that `/send-email` points to the Express backend.
+
 ## ✨ Features
 - **Responsive Design**: Fully functional on desktop, tablet, and mobile devices.
 - **Enquiry Modal**: Interactive form with international phone validation.
+- **Vercel Ready**: Pre-configured for serverless deployment on Vercel.
 - **Animations**: Smooth scroll animations and hover effects for an engaging user experience.
 - **Sticky Navbar**: Transparent navbar that blurs on scroll.

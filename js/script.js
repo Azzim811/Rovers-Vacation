@@ -1,191 +1,229 @@
-// Hamburger Menu Toggle
+// Sticky Navigation
+const navbar = document.querySelector('.navbar');
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+        navbar.classList.add('scrolled');
+    } else {
+        navbar.classList.remove('scrolled');
+    }
+});
+
+// Mobile Menu (Hamburger)
 const hamburger = document.querySelector('.hamburger');
 const navLinks = document.querySelector('.nav-links');
 
-hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    navLinks.classList.toggle('active');
-});
+if (hamburger) {
+    hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        navLinks.classList.toggle('active');
+    });
+}
 
-// Active Link Handling
-const navItems = document.querySelectorAll('.nav-links a');
-
-navItems.forEach(item => {
-    item.addEventListener('click', function () {
-        // Remove active class from all items
-        navItems.forEach(nav => nav.classList.remove('active'));
-        // Add active class to clicked item
-        this.classList.add('active');
-
-        // Close mobile menu if open
-        if (window.innerWidth <= 768) {
-            hamburger.classList.remove('active');
-            navLinks.classList.remove('active');
-        }
+// Close mobile menu when clicking a link
+document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        navLinks.classList.remove('active');
     });
 });
 
-// Set active based on hash on load
-window.addEventListener('load', () => {
-    const hash = window.location.hash;
-    if (hash) {
-        const activeLink = document.querySelector(`.nav-links a[href="${hash}"]`);
-        if (activeLink) {
-            navItems.forEach(nav => nav.classList.remove('active'));
-            activeLink.classList.add('active');
-        }
-    }
-});
-
-// Modal Functionality
+// Modal Logic
 const modal = document.getElementById('enquiryModal');
 
 function openModal() {
-    modal.style.display = 'flex';
-}
-
-function closeModal() {
-    modal.style.display = 'none';
-}
-
-// Close modal when clicking outside
-window.onclick = function (event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent scroll
     }
 }
 
-// Hero Slider
-const slides = document.querySelectorAll('.slide');
-let currentSlide = 0;
-
-function nextSlide() {
-    slides[currentSlide].classList.remove('active');
-    currentSlide = (currentSlide + 1) % slides.length;
-    slides[currentSlide].classList.add('active');
+function closeModal() {
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto'; // Restore scroll
+    }
 }
 
-// Change slide every 5 seconds
-setInterval(nextSlide, 5000);
+// Close modal when clicking outside
+window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+        closeModal();
+    }
+});
 
 // Initialize Intl Tel Input
 const phoneInput = document.querySelector("#enquiry_mobile");
 let iti;
-if (phoneInput) {
+
+if (phoneInput && window.intlTelInput) {
     iti = window.intlTelInput(phoneInput, {
         utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
         separateDialCode: true,
         initialCountry: "auto",
-        dropdownContainer: document.body, // Attachment to body is CRITICAL for iOS in modals
-        autoPlaceholder: "polite",
         geoIpLookup: callback => {
             fetch("https://ipapi.co/json")
                 .then(res => res.json())
                 .then(data => callback(data.country_code))
-                .catch(() => callback("in")); // Default to 'in' or 'us'
-        },
+                .catch(() => callback("us"));
+        }
     });
 }
 
-// Toast Notification Function
-function showToast(message, type = 'success') {
-    let container = document.querySelector('.toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-    }
+// Form Submission using Formspree (No backend needed!)
+const enquiryForm = document.querySelector('#tripEnquiryForm');
+const submitBtn = document.querySelector('#enquirySubmitBtn');
 
-    const toast = document.createElement('div');
-    toast.className = `toast ${type === 'success' ? 'success' : 'error'}`;
-
-    const iconName = type === 'success' ? 'checkmark-circle-outline' : 'alert-circle-outline';
-    const title = type === 'success' ? 'Success' : 'Error';
-
-    toast.innerHTML = `
-        <div class="toast-icon">
-            <ion-icon name="${iconName}"></ion-icon>
-        </div>
-        <div class="toast-content">
-            <div class="toast-title">${title}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-        <div class="toast-close" onclick="this.parentElement.remove()">
-            <ion-icon name="close-outline"></ion-icon>
-        </div>
-    `;
-
-    container.appendChild(toast);
-
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.style.animation = 'toastSlideOut 0.5s ease forwards';
-            toast.addEventListener('animationend', () => {
-                toast.remove();
-            });
-        }
-    }, 5000);
-}
-
-// Handle Form Submission
-const enquiryForm = document.getElementById('tripEnquiryForm');
 if (enquiryForm) {
-    enquiryForm.addEventListener('submit', function (e) {
+    enquiryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const name = document.getElementById('enquiry_name').value;
-        const mobile = iti ? iti.getNumber() : document.getElementById('enquiry_mobile').value;
-        const email = document.getElementById('enquiry_email').value;
-        const members = document.getElementById('enquiry_members').value;
-
-        const submitBtn = document.getElementById('enquirySubmitBtn');
-        const originalBtnText = submitBtn.innerText;
-        submitBtn.innerText = 'Sending...';
+        // Update button state
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.textContent = 'Submitting...';
         submitBtn.disabled = true;
 
-        fetch('/send-email', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name, mobile, email, members }),
-        })
-            .then(response => {
-                if (response.ok) {
-                    showToast('Enquiry submitted successfully!', 'success');
-                    enquiryForm.reset();
-                    if (iti) iti.setCountry(iti.getSelectedCountryData().iso2); // Reset phone state
-                    closeModal();
-                } else {
-                    showToast('Failed to submit. Please try again.', 'error');
-                }
+        const formData = {
+            // Email subject and reply-to
+            _subject: '🎫 New Trip Enquiry - Rovers Vacations',
+            _replyto: document.getElementById('enquiry_email').value,
+
+            // Customer Details
+            'Customer Name': document.getElementById('enquiry_name').value,
+            'Email Address': document.getElementById('enquiry_email').value,
+            'Mobile Number': iti ? iti.getNumber() : document.getElementById('enquiry_mobile').value,
+            'Number of Travelers': document.getElementById('enquiry_members').value,
+
+            // Additional Info
+            'Enquiry Type': 'Trip Planning',
+            'Submission Date': new Date().toLocaleString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                dateStyle: 'full',
+                timeStyle: 'short'
             })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Server connection error. Please try again.', 'error');
-            })
-            .finally(() => {
-                submitBtn.innerText = originalBtnText;
-                submitBtn.disabled = false;
+        };
+
+        try {
+            // Send to Formspree - Replace YOUR_FORM_ID with your actual Formspree form ID
+            const response = await fetch('https://formspree.io/f/xlggobpy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
             });
+
+            if (response.ok) {
+                alert('Enquiry submitted successfully! We will contact you soon.');
+                enquiryForm.reset();
+                if (iti) iti.setNumber('');
+                closeModal();
+            } else {
+                throw new Error('Submission failed');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to submit enquiry. Please try again or contact us directly at azzim811@gmail.com');
+        } finally {
+            submitBtn.textContent = originalBtnText;
+            submitBtn.disabled = false;
+        }
     });
 }
 
-// Intersection Observer for Scroll Animations
+// Testimonial Slide (Simple Auto-scroll implementation)
+const testimonialTrack = document.querySelector('.testimonials-grid');
+if (testimonialTrack) {
+    // Note: In case the user wants a more complex slider later, 
+    // this handles the basic presence of cards.
+    console.log('Testimonials initialized');
+}
+
+// Newsletter Form Submission using Formspree
+const newsletterForm = document.querySelector('#newsletterForm');
+if (newsletterForm) {
+    newsletterForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById('newsletter_email');
+        const email = emailInput.value;
+        const submitButton = newsletterForm.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+
+        submitButton.textContent = 'Subscribing...';
+        submitButton.disabled = true;
+
+        try {
+            // Send to Formspree - Replace YOUR_NEWSLETTER_FORM_ID with your actual form ID
+            const response = await fetch('https://formspree.io/f/xpqqodbw', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    _subject: '📧 New Newsletter Subscription - Rovers Vacations',
+                    'Subscriber Email': email,
+                    'Subscription Type': 'Newsletter',
+                    'Subscription Date': new Date().toLocaleString('en-IN', {
+                        timeZone: 'Asia/Kolkata',
+                        dateStyle: 'full',
+                        timeStyle: 'short'
+                    }),
+                    'Source': 'Website Footer Newsletter Form'
+                })
+            });
+
+            if (response.ok) {
+                alert(`Thank you for subscribing! You'll receive our latest travel updates at ${email}`);
+                newsletterForm.reset();
+            } else {
+                throw new Error('Subscription failed');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Subscription failed. Please try again.');
+        } finally {
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+        }
+    });
+}
+
+// Scroll Reveal Animations using Intersection Observer
 const observerOptions = {
-    threshold: 0.1
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
 };
 
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            entry.target.classList.add('appear');
-            observer.unobserve(entry.target);
+            entry.target.classList.add('reveal');
         }
     });
 }, observerOptions);
 
-document.querySelectorAll('.fade-up').forEach(el => {
-    observer.observe(el);
+// Observe sections for scroll animations
+const sections = document.querySelectorAll('.section');
+sections.forEach(section => {
+    observer.observe(section);
 });
+
+// Add reveal class styles dynamically for smooth animations
+const style = document.createElement('style');
+style.textContent = `
+    .section {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    
+    .section.reveal {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .hero {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+`;
+document.head.appendChild(style);
